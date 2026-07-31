@@ -46,6 +46,7 @@ final class StorageService {
             }
         }
         container.viewContext.automaticallyMergesChangesFromParent = true
+    }
 
     private var context: NSManagedObjectContext { container.viewContext }
 
