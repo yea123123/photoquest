@@ -129,21 +129,19 @@ struct DuetView: View {
 
     // MARK: - Камера
 
-    private func camera(for index: Int) -> some View {
+    private func camera(for index: Int) -> AnyView {
         let pair = viewModel.card.pairs.indices.contains(index) ? viewModel.card.pairs[index] : []
-        guard pair.count == 2 else { return emptyCamera }
-        return CameraView(
+        guard pair.count == 2 else {
+            return AnyView(Color.black.ignoresSafeArea())
+        }
+        return AnyView(CameraView(
             questText: "Сфоткай: \(pair[0]) И \(pair[1]) в одном кадре!",
             keywords: QuestKeywords.keywords(for: pair[0]),
             keywordsB: QuestKeywords.keywords(for: pair[1]),
             pointsOverride: 40,
             onComplete: { _ in viewModel.complete(index: index) },
             onFinish: { _ in showCamera = false }
-        )
-    }
-
-    private var emptyCamera: some View {
-        Color.black.ignoresSafeArea()
+        ))
     }
 
     // MARK: - Бонус
