@@ -24,6 +24,8 @@
 	<string>Приложение использует камеру, чтобы распознавать объекты для заданий фото-квеста.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Чтобы сохранять ваши выполненные задания в фотогалерею.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Шагомер-челлендж считает ваши шаги за день, чтобы начислять очки за прогулки.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

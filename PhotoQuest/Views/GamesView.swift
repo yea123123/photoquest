@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Хаб мини-игр: «Фото-Бинго» (прогулка), «Фото-Спринт» (гонка на время),
-/// «Фото-Рулетка» (барабан), «Фото-Дуэт» (два в одном), «Угадай-ка» (викторина).
+/// Хаб мини-игр: Бинго, Спринт, Рулетка, Дуэт, Бомба, Шагомер, Силуэт, Угадай-ка.
 @MainActor
 struct GamesView: View {
 
@@ -57,6 +56,45 @@ struct GamesView: View {
                             title: "Фото-Дуэт",
                             subtitle: "Два в одном кадре",
                             description: "Сфоткай ДВА предмета в одном кадре: кот + кружка, бабочка + цветок… Пара — +40, вся карточка — «Дуэт!» +200."
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        BombView()
+                    } label: {
+                        gameCard(
+                            emoji: "💣",
+                            color: .red,
+                            title: "Фото-Бомба",
+                            subtitle: "Успей обезвредить",
+                            description: "Фитиль горит 30 секунд! Каждое удачное фото — +10 секунд и очки × комбо. Промах сжигает 8 секунд. Сколько протянешь?"
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        StepsView()
+                    } label: {
+                        gameCard(
+                            emoji: "🚶",
+                            color: .green,
+                            title: "Шагомер-Челлендж",
+                            subtitle: "Награды за прогулки",
+                            description: "Шаги за день открывают сундуки: 500 шагов — +100, 1500 — +250, 3000 — +500 очков. Настоящий повод гулять!"
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        SilhouetteView()
+                    } label: {
+                        gameCard(
+                            emoji: "👻",
+                            color: .indigo,
+                            title: "Угадай по силуэту",
+                            subtitle: "12 секунд на ответ",
+                            description: "Размытое эмодзи и 3 варианта. Верно — +10 очков, идеал 10/10 — бонус +30. Быстрая разминка для мозга."
                         )
                     }
                     .buttonStyle(.plain)
