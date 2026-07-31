@@ -92,7 +92,7 @@ final class GameStats: ObservableObject {
     func achievements(storage: StorageService) -> [Achievement] {
         let completed = storage.fetchCompletedQuests()
         let count = completed.count
-        let days = Set(completed.map { Calendar.current.startOfDay(for: $0.date) }).count
+        let days = Set(completed.compactMap { $0.date.map { Calendar.current.startOfDay(for: $0) } }).count
 
         return [
             Achievement(id: "first", emoji: "📸", title: "Первый кадр",
