@@ -116,10 +116,14 @@ final class StorageService {
         saveContext()
     }
 
-    /// Текущее задание — первое невыполненное в очереди.
-    func currentQuest() -> QuestItem? {
+    /// Текущее задание — первое невыполненное в очереди (опционально с фильтром по категории).
+    func currentQuest(category: String? = nil) -> QuestItem? {
         let request = NSFetchRequest<QuestItem>(entityName: "QuestItem")
-        request.predicate = NSPredicate(format: "isCompleted == NO")
+        if let category {
+            request.predicate = NSPredicate(format: "isCompleted == NO AND category == %@", category)
+        } else {
+            request.predicate = NSPredicate(format: "isCompleted == NO")
+        }
         request.sortDescriptors = [NSSortDescriptor(key: "sortOrder", ascending: true)]
         request.fetchLimit = 1
         return (try? context.fetch(request))?.first

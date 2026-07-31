@@ -35,38 +35,56 @@ final class ObjectDetectionService {
 
     // MARK: - Классификация
 
-    /// Классифицирует изображение, возвращает топ-1 результат.
-    /// Тяжёлая работа (handler.perform) выполняется в фоне;
-    /// результат возвращается вызывающему коду, уже готовый к применению.
-    func classify(_ image: UIImage) async -> DetectionResult? {
-        guard let model, let cgImage = image.cgImage else { return nil }
+    /// Классифицирует изображение и возвращает топ-5 результатов (по убыванию уверенности).
+    /// Кадр анализируется тремя способами обрезки (центр/растяжение/вписать), результаты
+    /// объединяются по классам — так объект находится, даже если он не в центре кадра.
+    /// Тяжёлая работа (handler.perform) выполняется в фоне.
+    func classify(_ image: UIImage) async -> [DetectionResult] {
+        guard let model, let cgImage = image.cgImage else { return [] }
 
-        let request = VNCoreMLRequest(model: model)
-        request.imageCropAndScaleOption = .centerCrop
+        return await Task.detached(priority: .userInitiated) { () -> [DetectionResult] in
+            let crops: [VNImageCropAndScaleOption] = [.centerCrop, .scaleFill, .scaleFit]
+            var bestByClass: [String: Float] = [:]
 
-        return await Task.detached(priority: .userInitiated) { () -> DetectionResult? in
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-            do {
-                try handler.perform([request])
-            } catch {
-                print("Ошибка классификации: \(error)")
-                return nil
+            for crop in crops {
+                let request = VNCoreMLRequest(model: model)
+                request.imageCropAndScaleOption = crop
+                let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+                do {
+                    try handler.perform([request])
+                } catch {
+                    print("Ошибка классификации: \(error)")
+                    continue
+                }
+                guard let observations = request.results as? [VNClassificationObservation] else { continue }
+                for observation in observations where observation.confidence > 0.01 {
+                    bestByClass[observation.identifier] = max(bestByClass[observation.identifier] ?? 0,
+                                                               observation.confidence)
+                }
             }
-            guard let results = request.results as? [VNClassificationObservation],
-                  let top = results.first else { return nil }
-            return DetectionResult(identifier: top.identifier, confidence: top.confidence)
+
+            return bestByClass
+                .map { DetectionResult(identifier: $0.key, confidence: $0.value) }
+                .sorted { $0.confidence > $1.confidence }
+                .prefix(5)
+                .map { $0 }
         }.value
     }
 
     // MARK: - Проверка соответствия
 
-    /// Условие успеха: уверенность выше порога И найденный класс есть в списке
-    /// ключевых слов для данного задания.
-    func isMatch(result: DetectionResult, keywords: [String]) -> Bool {
-        guard result.confidence >= Constants.minConfidence else { return false }
-        return keywords.contains { keyword in
-            Self.keywordsMatch(result.identifier, keyword: keyword)
+    /// Условие успеха: хотя бы один из топ-5 классов совпал со списком ключевых слов.
+    /// Для главного класса порог уверенности строгий, для остальных — мягкий (0.3),
+    /// чтобы задание засчитывалось, когда объект на фото есть, но модель не уверена на 100%.
+    func isMatch(results: [DetectionResult], keywords: [String]) -> Bool {
+        for (index, result) in results.enumerated() {
+            let threshold: Float = index == 0 ? Constants.minConfidence : 0.3
+            guard result.confidence >= threshold else { continue }
+            if keywords.contains(where: { Self.keywordsMatch(result.identifier, keyword: $0) }) {
+                return true
+            }
         }
+        return false
     }
 
     /// Сравнивает идентификатор класса из модели со словом из словаря.

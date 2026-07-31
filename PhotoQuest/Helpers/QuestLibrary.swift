@@ -244,6 +244,16 @@ enum QuestKeywords {
 /// Задания выдаются в случайном порядке; пропущенное уходит в конец очереди.
 enum QuestLibrary {
 
+    /// Категории заданий в порядке появления (для чипов-фильтров).
+    static let categories: [String] = {
+        var seen = Set<String>()
+        var result: [String] = []
+        for quest in quests where seen.insert(quest.category).inserted {
+            result.append(quest.category)
+        }
+        return result
+    }()
+
     static let quests: [QuestDefinition] = [
         // --- Животные (10) ---
         QuestDefinition(text: "Сфотографируй кота", category: "Животные", keywordKey: "кот"),

@@ -14,9 +14,9 @@ final class QuestManager {
         storage.seedIfNeeded(quests: QuestLibrary.quests)
     }
 
-    /// Текущее задание (первое невыполненное в очереди).
-    func currentQuest() -> QuestDefinition? {
-        QuestLibrary.definition(for: storage.currentQuest()?.text)
+    /// Текущее задание (первое невыполненное в очереди, опционально по категории).
+    func currentQuest(category: String? = nil) -> QuestDefinition? {
+        QuestLibrary.definition(for: storage.currentQuest(category: category)?.text)
     }
 
     /// Прогресс: (выполнено, всего).

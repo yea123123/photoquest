@@ -15,7 +15,7 @@ final class CameraViewModel: ObservableObject {
     @Published var phase: Phase = .idle
     /// Последний снимок — показывается поверх видоискателя во время проверки.
     @Published var capturedPhoto: UIImage?
-    /// Что распознала нейросеть (для сообщения об ошибке).
+    /// Что распознала нейросеть (топ-3 класса, для сообщения об ошибке).
     @Published var detectedLabel: String?
     @Published var permissionDenied = false
     @Published var modelMissing = false
@@ -23,9 +23,14 @@ final class CameraViewModel: ObservableObject {
     @Published var flashOn = false
     @Published var showFailureAlert = false
     @Published var showModelSheet = false
+    /// Очки за последний снимок (показываются в оверлее успеха).
+    @Published private(set) var lastPointsEarned = 0
 
     let camera = CameraService()
     let questText: String
+
+    /// Момент открытия экрана камеры — для бонуса за скорость.
+    private let openedAt = Date()
 
     private let detector = ObjectDetectionService.shared
     private let keywords: [String]
@@ -72,6 +77,7 @@ final class CameraViewModel: ObservableObject {
     /// Спуск затвора: делает фото и запускает проверку.
     func capture() {
         guard phase != .checking, !permissionDenied else { return }
+        Haptics.shutter()
         camera.photoHandler = { [weak self] data in
             self?.handlePhoto(data)
         }
@@ -95,15 +101,18 @@ final class CameraViewModel: ObservableObject {
             showModelSheet = true
             return
         }
-        guard let result = await detector.classify(image) else {
+        let results = await detector.classify(image)
+        guard !results.isEmpty else {
             detectedLabel = nil
             presentFailure()
             return
         }
-        detectedLabel = "\(result.identifier), \(Int(result.confidence * 100))%"
+        detectedLabel = results.prefix(3)
+            .map { "\($0.identifier) (\(Int($0.confidence * 100))%)" }
+            .joined(separator: ", ")
 
-        if detector.isMatch(result: result, keywords: keywords) {
-            await succeed(image)
+        if detector.isMatch(results: results, keywords: keywords) {
+            await succeed(image, confidence: results.first?.confidence)
         } else {
             presentFailure()
         }
@@ -113,7 +122,7 @@ final class CameraViewModel: ObservableObject {
     func saveWithoutCheck() {
         guard let image = capturedPhoto else { return }
         showModelSheet = false
-        Task { await succeed(image) }
+        Task { await succeed(image, confidence: nil) }
     }
 
     /// Закрыть предупреждение о модели и вернуться к видоискателю.
@@ -129,12 +138,17 @@ final class CameraViewModel: ObservableObject {
         showFailureAlert = true
     }
 
-    /// Успех: сохраняем фото в базу, показываем зелёную галочку и закрываем камеру.
-    private func succeed(_ image: UIImage) async {
+    /// Успех: начисляем очки, сохраняем фото, показываем зелёную галочку и закрываем камеру.
+    private func succeed(_ image: UIImage, confidence: Float?) async {
+        let seconds = max(1, Int(Date().timeIntervalSince(openedAt)))
+        lastPointsEarned = GameStats.shared.recordCompleted(questText: questText,
+                                                            confidence: confidence,
+                                                            seconds: seconds)
         onComplete(image)
+        Haptics.winSound()
         Haptics.success()
         withAnimation(.easeInOut(duration: 0.3)) { phase = .success }
-        try? await Task.sleep(nanoseconds: 1_400_000_000)
+        try? await Task.sleep(nanoseconds: 1_600_000_000)
         onFinish(true)
     }
 
@@ -150,7 +164,7 @@ final class CameraViewModel: ObservableObject {
     /// «Сохранить принудительно» — если нейросеть ошиблась, фото всё равно засчитывается.
     func forceSave() {
         guard let image = capturedPhoto else { return }
-        Task { await succeed(image) }
+        Task { await succeed(image, confidence: nil) }
     }
 
     /// «Отмена» — возврат на главный экран без фото.

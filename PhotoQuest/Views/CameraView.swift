@@ -166,6 +166,9 @@ struct CameraView: View {
                 Text("Задание выполнено!")
                     .font(.title.bold())
                     .foregroundStyle(.white)
+                Text("+\(viewModel.lastPointsEarned) очков ⭐")
+                    .font(.title3.bold())
+                    .foregroundStyle(.white)
             }
         }
         .transition(.opacity)

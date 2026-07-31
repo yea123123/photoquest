@@ -9,6 +9,8 @@ struct HomeView: View {
 
     @State private var showCamera = false
     @State private var showSuccessFlash = false
+    @State private var showAchievements = false
+    @State private var flashPoints = 0
 
     var body: some View {
         GeometryReader { geo in
@@ -17,8 +19,9 @@ struct HomeView: View {
 
                 VStack(spacing: 18) {
                     header
+                    categoryChips
                     questArea
-                        .frame(height: max(190, geo.size.height * 0.33))
+                        .frame(height: max(170, geo.size.height * 0.28))
                     Spacer(minLength: 0)
                     cameraButton
                     actionButtons
@@ -41,10 +44,11 @@ struct HomeView: View {
                 onFinish: { success in cameraDidFinish(success: success) }
             )
         }
+        .sheet(isPresented: $showAchievements) { AchievementsView() }
         .onAppear { viewModel.refresh() }
     }
 
-    // MARK: - Шапка с прогрессом
+    // MARK: - Шапка с прогрессом и очками
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -52,14 +56,72 @@ struct HomeView: View {
                 Text(Constants.appName)
                     .font(.largeTitle.bold())
                 Spacer()
-                Text("\(viewModel.completedCount) / \(viewModel.totalCount)")
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(.secondary)
+                Button {
+                    Haptics.light()
+                    showAchievements = true
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "trophy.fill")
+                            .foregroundStyle(.yellow)
+                        Text("\(viewModel.totalPoints)")
+                            .font(.subheadline.weight(.bold))
+                            .monospacedDigit()
+                        if viewModel.currentStreak >= 2 {
+                            Text("🔥\(viewModel.currentStreak)")
+                                .font(.caption.weight(.semibold))
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Достижения: \(viewModel.totalPoints) очков")
             }
             ProgressView(value: viewModel.totalCount > 0 ? Double(viewModel.completedCount) / Double(viewModel.totalCount) : 0)
                 .tint(.green)
+            HStack {
+                Text("\(viewModel.completedCount) / \(viewModel.totalCount)")
+                    .font(.caption.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let category = viewModel.chosenCategory {
+                    Text(category)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
+    }
+
+    // MARK: - Фильтр по категориям
+
+    private var categoryChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                categoryChip("Все", category: nil)
+                ForEach(QuestLibrary.categories, id: \.self) { category in
+                    categoryChip(category, category: category)
+                }
+            }
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func categoryChip(_ title: String, category: String?) -> some View {
+        let isSelected = viewModel.chosenCategory == category
+        return Button {
+            Haptics.light()
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                viewModel.setCategory(category)
+            }
+        } label: {
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background(Capsule().fill(isSelected ? Color.accentColor : Color(.secondarySystemGroupedBackground)))
+                .foregroundStyle(isSelected ? .white : .primary)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Область задания (с анимацией смены)
@@ -70,6 +132,23 @@ struct HomeView: View {
                 completionCard
                     .transition(.asymmetric(insertion: .scale(scale: 0.85).combined(with: .opacity),
                                             removal: .opacity))
+            } else if viewModel.categoryDone {
+                VStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 46))
+                        .foregroundStyle(.green)
+                    Text("В этой категории всё выполнено!")
+                        .font(.headline)
+                        .multilineTextAlignment(.center)
+                    Text("Выбери другую категорию или вернись ко всем заданиям.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(20)
+                .background(RoundedRectangle(cornerRadius: 26)
+                    .fill(Color(.secondarySystemGroupedBackground)))
             } else if let quest = viewModel.currentQuest {
                 QuestCardView(quest: quest)
                     .id(quest.text)
@@ -213,6 +292,9 @@ struct HomeView: View {
                 Text("Фото сохранено!")
                     .font(.title.bold())
                     .foregroundStyle(.white)
+                Text("+\(flashPoints) очков ⭐")
+                    .font(.title3.bold())
+                    .foregroundStyle(.white)
             }
         }
         .transition(.opacity)
@@ -220,10 +302,12 @@ struct HomeView: View {
 
     // MARK: - Обработка закрытия камеры
 
+    @MainActor
     private func cameraDidFinish(success: Bool) {
         showCamera = false
         guard success else { return }
         viewModel.refresh()
+        flashPoints = GameStats.shared.lastPointsEarned
         Haptics.success()
         withAnimation(.easeInOut(duration: 0.25)) { showSuccessFlash = true }
         Task {
