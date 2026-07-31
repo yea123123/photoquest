@@ -24,6 +24,11 @@ final class HomeViewModel: ObservableObject {
         refresh()
     }
 
+    /// Уровень игрока по очкам (для бейджа в шапке).
+    var level: PlayerLevel {
+        GameStats.level(points: totalPoints)
+    }
+
     /// Обновляет все публикуемые данные из хранилища.
     func refresh() {
         questManager.seedIfNeeded()

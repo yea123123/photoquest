@@ -9,8 +9,11 @@ struct PhotoQuestApp: App {
     }
 }
 
-/// Корневой экран: две вкладки — «Квест» и «Галерея».
+/// Корневой экран: четыре вкладки — «Квест», «Галерея», «Достижения», «Настройки».
 struct ContentView: View {
+
+    @StateObject private var settings = GameSettings.shared
+
     var body: some View {
         TabView {
             HomeView()
@@ -21,6 +24,15 @@ struct ContentView: View {
                 .tabItem {
                     Label("Галерея", systemImage: "photo.on.rectangle")
                 }
+            AchievementsView(embedded: true)
+                .tabItem {
+                    Label("Достижения", systemImage: "trophy.fill")
+                }
+            SettingsView()
+                .tabItem {
+                    Label("Настройки", systemImage: "gearshape.fill")
+                }
         }
+        .preferredColorScheme(settings.theme.colorScheme)
     }
 }

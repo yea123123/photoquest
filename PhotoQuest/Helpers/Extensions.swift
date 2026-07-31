@@ -29,12 +29,33 @@ extension QuestDefinition {
 
 // MARK: - Тактильная обратная связь
 
+/// Звук и вибрация управляются настройками (вкладка «Настройки»).
 enum Haptics {
-    static func success() { UINotificationFeedbackGenerator().notificationOccurred(.success) }
-    static func error() { UINotificationFeedbackGenerator().notificationOccurred(.error) }
-    static func light() { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+    @MainActor
+    static func success() {
+        guard GameSettings.shared.hapticsEnabled else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+    @MainActor
+    static func error() {
+        guard GameSettings.shared.hapticsEnabled else { return }
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+    }
+    @MainActor
+    static func light() {
+        guard GameSettings.shared.hapticsEnabled else { return }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }
     /// Звук затвора камеры.
-    static func shutter() { AudioServicesPlaySystemSound(1108) }
+    @MainActor
+    static func shutter() {
+        guard GameSettings.shared.soundEnabled else { return }
+        AudioServicesPlaySystemSound(1108)
+    }
     /// Короткий «победный» звук.
-    static func winSound() { AudioServicesPlaySystemSound(1104) }
+    @MainActor
+    static func winSound() {
+        guard GameSettings.shared.soundEnabled else { return }
+        AudioServicesPlaySystemSound(1104)
+    }
 }

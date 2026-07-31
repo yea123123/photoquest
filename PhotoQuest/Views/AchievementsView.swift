@@ -6,6 +6,9 @@ struct AchievementsView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    /// true — экран открыт как вкладка (кнопка «Готово» не нужна).
+    var embedded = false
+
     private var stats: GameStats { GameStats.shared }
     private var achievements: [Achievement] {
         GameStats.shared.achievements(storage: .shared)
@@ -48,8 +51,10 @@ struct AchievementsView: View {
             }
             .navigationTitle("Достижения")
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Готово") { dismiss() }
+                if !embedded {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Готово") { dismiss() }
+                    }
                 }
             }
         }

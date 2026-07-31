@@ -66,19 +66,23 @@ final class ObjectDetectionService {
             return bestByClass
                 .map { DetectionResult(identifier: $0.key, confidence: $0.value) }
                 .sorted { $0.confidence > $1.confidence }
-                .prefix(5)
+                .prefix(10)
                 .map { $0 }
         }.value
     }
 
     // MARK: - Проверка соответствия
 
-    /// Условие успеха: хотя бы один из топ-5 классов совпал со списком ключевых слов.
-    /// Для главного класса порог уверенности строгий, для остальных — мягкий (0.3),
-    /// чтобы задание засчитывалось, когда объект на фото есть, но модель не уверена на 100%.
+    /// Условие успеха: класс из списка ключевых слов попал в топ-10 результатов.
+    /// Первые три ответа модели — её главные кандидаты: если среди них есть
+    /// нужный класс, задание засчитывается (порог почти символический).
+    /// Остальные места топ-10 проверяются с порогом из настроек
+    /// («Чувствительность детекта»), чтобы не засчитывать случайные догадки.
+    @MainActor
     func isMatch(results: [DetectionResult], keywords: [String]) -> Bool {
+        let sensitivity = GameSettings.shared.sensitivity
         for (index, result) in results.enumerated() {
-            let threshold: Float = index == 0 ? Constants.minConfidence : 0.3
+            let threshold: Float = index < 3 ? sensitivity.topFloor : sensitivity.restThreshold
             guard result.confidence >= threshold else { continue }
             if keywords.contains(where: { Self.keywordsMatch(result.identifier, keyword: $0) }) {
                 return true

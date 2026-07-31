@@ -25,6 +25,8 @@ final class CameraViewModel: ObservableObject {
     @Published var showModelSheet = false
     /// Очки за последний снимок (показываются в оверлее успеха).
     @Published private(set) var lastPointsEarned = 0
+    /// Бонус за первый квест дня (показывается в оверлее успеха).
+    @Published private(set) var lastDayBonus = 0
 
     let camera = CameraService()
     let questText: String
@@ -45,6 +47,7 @@ final class CameraViewModel: ObservableObject {
         self.keywords = keywords
         self.onComplete = onComplete
         self.onFinish = onFinish
+        flashOn = GameSettings.shared.flashMode == .on
     }
 
     // MARK: - Жизненный цикл
@@ -144,6 +147,7 @@ final class CameraViewModel: ObservableObject {
         lastPointsEarned = GameStats.shared.recordCompleted(questText: questText,
                                                             confidence: confidence,
                                                             seconds: seconds)
+        lastDayBonus = GameStats.shared.lastDayBonus
         onComplete(image)
         Haptics.winSound()
         Haptics.success()

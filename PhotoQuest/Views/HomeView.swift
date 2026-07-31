@@ -75,6 +75,9 @@ struct HomeView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Достижения: \(viewModel.totalPoints) очков")
             }
+            Text("\(viewModel.level.emoji) \(viewModel.level.title)")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
             ProgressView(value: viewModel.totalCount > 0 ? Double(viewModel.completedCount) / Double(viewModel.totalCount) : 0)
                 .tint(.green)
             HStack {

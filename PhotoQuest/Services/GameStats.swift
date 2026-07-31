@@ -10,6 +10,12 @@ struct Achievement: Identifiable {
     let isUnlocked: Bool
 }
 
+/// Уровень игрока по количеству очков.
+struct PlayerLevel {
+    let emoji: String
+    let title: String
+}
+
 /// Игровая статистика: очки, серия, рекорды и достижения.
 /// Хранится в UserDefaults — не требует миграций CoreData.
 @MainActor
@@ -30,6 +36,8 @@ final class GameStats: ObservableObject {
     @Published private(set) var maxConfidence: Float
     /// Очки, начисленные за последнее выполненное задание (для надписи «+N»).
     @Published private(set) var lastPointsEarned = 0
+    /// Бонус за первый квест дня (20 очков), если он был начислен в последний раз.
+    @Published private(set) var lastDayBonus = 0
 
     private init() {
         totalPoints = defaults.integer(forKey: Self.keyPoints)
@@ -42,9 +50,13 @@ final class GameStats: ObservableObject {
 
     /// Задание выполнено: начисляет очки, продлевает серию, обновляет рекорды.
     /// Формула: 50 базовых + бонус за уверенность детекта (до 50)
-    /// + бонус за скорость (до 29) + бонус за серию (до 50).
+    /// + бонус за скорость (до 29) + бонус за серию (до 50)
+    /// + бонус за первый квест дня (20).
     @discardableResult
     func recordCompleted(questText: String, confidence: Float?, seconds: Int) -> Int {
+        let last = defaults.object(forKey: Self.keyLastDate) as? Date
+        let isNewDay = last.map { !Calendar.current.isDateInToday($0) } ?? true
+
         updateStreak()
 
         var points = 50
@@ -56,6 +68,9 @@ final class GameStats: ObservableObject {
             points += 30 - seconds
         }
         points += min(currentStreak, 10) * 5
+        if isNewDay {
+            points += 20
+        }
 
         totalPoints += points
         bestTimeSeconds = bestTimeSeconds == 0 ? seconds : min(bestTimeSeconds, seconds)
@@ -67,7 +82,33 @@ final class GameStats: ObservableObject {
         defaults.set(maxConfidence, forKey: Self.keyMaxConfidence)
 
         lastPointsEarned = points
+        lastDayBonus = isNewDay ? 20 : 0
         return points
+    }
+
+    /// Полный сброс игровой статистики (очки, серия, рекорды, достижения).
+    func reset() {
+        totalPoints = 0
+        currentStreak = 0
+        bestTimeSeconds = 0
+        maxConfidence = 0
+        lastPointsEarned = 0
+        lastDayBonus = 0
+        for key in [Self.keyPoints, Self.keyStreak, Self.keyLastDate,
+                    Self.keyBestTime, Self.keyMaxConfidence] {
+            defaults.removeObject(forKey: key)
+        }
+    }
+
+    /// Уровень игрока по накопленным очкам.
+    static func level(points: Int) -> PlayerLevel {
+        switch points {
+        case 0..<100:   return PlayerLevel(emoji: "🌱", title: "Новичок")
+        case 100..<300: return PlayerLevel(emoji: "📸", title: "Фотолюбитель")
+        case 300..<600: return PlayerLevel(emoji: "🎯", title: "Охотник за кадрами")
+        case 600..<1000: return PlayerLevel(emoji: "🔥", title: "Профи")
+        default:        return PlayerLevel(emoji: "👑", title: "Фото-легенда")
+        }
     }
 
     /// Серия: задание сегодня или вчера продлевает её, иначе — сброс на 1.

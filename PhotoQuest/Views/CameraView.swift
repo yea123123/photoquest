@@ -169,6 +169,11 @@ struct CameraView: View {
                 Text("+\(viewModel.lastPointsEarned) очков ⭐")
                     .font(.title3.bold())
                     .foregroundStyle(.white)
+                if viewModel.lastDayBonus > 0 {
+                    Text("+\(viewModel.lastDayBonus) бонус за новый день 🎁")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.white.opacity(0.9))
+                }
             }
         }
         .transition(.opacity)
@@ -207,14 +212,14 @@ struct CameraView: View {
         .padding(24)
     }
 
-    /// Предупреждение об ошибке распознавания: переснять или сохранить принудительно.
+    /// Предупреждение об ошибке распознавания: засчитать вручную или переснять.
     private var failureAlert: Alert {
         let recognized = viewModel.detectedLabel.map { "\n\nРаспознано: \($0)" } ?? ""
         return Alert(
             title: Text("Не похоже на задание"),
             message: Text("Это не похоже на «\(viewModel.questText)», попробуй ещё раз.\(recognized)"),
-            primaryButton: .default(Text("Переснять")) { viewModel.retake() },
-            secondaryButton: .default(Text("Сохранить принудительно")) { viewModel.forceSave() }
+            primaryButton: .default(Text("Это оно, засчитать!")) { viewModel.forceSave() },
+            secondaryButton: .default(Text("Переснять")) { viewModel.retake() }
         )
     }
 
