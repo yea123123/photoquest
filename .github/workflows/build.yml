@@ -33,20 +33,38 @@ jobs:
       - name: Download MobileNetV2 model (best effort)
         run: |
           mkdir -p PhotoQuest/Models
+          OUT="PhotoQuest/Models/MobileNetV2.mlmodel"
+          rm -f "$OUT"
           for url in \
             "https://docs-assets.developer.apple.com/coreml/models/MobileNetV2.mlmodel" \
             "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/master/MobileNetV2.mlmodel" \
             "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/main/MobileNetV2.mlmodel"; do
             echo "Trying $url"
-            if curl -sSL --fail -o PhotoQuest/Models/MobileNetV2.mlmodel "$url"; then
+            if curl -sSL --fail -o "$OUT" "$url"; then
+              echo "Downloaded from $url"
               break
             fi
           done
-          if [ -s PhotoQuest/Models/MobileNetV2.mlmodel ]; then
-            size=$(stat -f%z PhotoQuest/Models/MobileNetV2.mlmodel)
-            if [ "$size" -lt 1000000 ] || ! unzip -t PhotoQuest/Models/MobileNetV2.mlmodel >/dev/null 2>&1; then
+          # Fallback: ищем модель внутри архива репозитория hollance
+          if [ ! -s "$OUT" ]; then
+            echo "Trying GitHub tarball of hollance/MobileNet-CoreML"
+            if curl -sSL --fail -o /tmp/mobilenet-repo.tar.gz \
+                 "https://github.com/hollance/MobileNet-CoreML/archive/refs/heads/master.tar.gz"; then
+              FOUND=$(tar -tzf /tmp/mobilenet-repo.tar.gz | grep -i "MobileNetV2\.mlmodel$" | head -n 1)
+              echo "Found in tarball: ${FOUND:-none}"
+              if [ -n "$FOUND" ]; then
+                tar -xzf /tmp/mobilenet-repo.tar.gz -C PhotoQuest/Models "$FOUND"
+                find PhotoQuest/Models -name "MobileNetV2.mlmodel" -exec mv -f {} "$OUT" \;
+              fi
+            else
+              echo "Tarball download failed"
+            fi
+          fi
+          if [ -s "$OUT" ]; then
+            size=$(stat -f%z "$OUT")
+            if [ "$size" -lt 1000000 ] || ! unzip -t "$OUT" >/dev/null 2>&1; then
               echo "::warning::Файл модели выглядит битым (${size} байт) — собираю без модели"
-              rm -f PhotoQuest/Models/MobileNetV2.mlmodel
+              rm -f "$OUT"
             else
               echo "Модель загружена: ${size} байт"
             fi

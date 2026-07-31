@@ -58,9 +58,6 @@ final class CameraService: NSObject {
             }
 
             if !self.session.outputs.contains(self.photoOutput), self.session.canAddOutput(self.photoOutput) {
-                if self.photoOutput.isMaxPhotoQualityPrioritizationSupported {
-                    self.photoOutput.maxPhotoQualityPrioritization = .quality
-                }
                 self.session.addOutput(self.photoOutput)
             }
 

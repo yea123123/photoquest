@@ -38,7 +38,7 @@ final class StorageService {
                 try? fileManager.removeItem(at: storeURL)
                 try? fileManager.removeItem(at: storeURL.appendingPathExtension("sqlite-wal"))
                 try? fileManager.removeItem(at: storeURL.appendingPathExtension("sqlite-shm"))
-                container.loadPersistentStores { _, secondError in
+                self.container.loadPersistentStores { _, secondError in
                     if let secondError {
                         assertionFailure("Не удалось создать хранилище CoreData: \(secondError)")
                     }
@@ -46,7 +46,6 @@ final class StorageService {
             }
         }
         container.viewContext.automaticallyMergesChangesFromParent = true
-    }
 
     private var context: NSManagedObjectContext { container.viewContext }
 
@@ -64,7 +63,7 @@ final class StorageService {
         let questEntity = NSEntityDescription()
         questEntity.name = "QuestItem"
         questEntity.managedObjectClassName = NSStringFromClass(QuestItem.self)
-        questEntity.attributes = [
+        questEntity.properties = [
             attribute("text", .stringAttributeType),
             attribute("category", .stringAttributeType),
             attribute("sortOrder", .integer64AttributeType),
@@ -75,7 +74,7 @@ final class StorageService {
         let completedEntity = NSEntityDescription()
         completedEntity.name = "CompletedQuest"
         completedEntity.managedObjectClassName = NSStringFromClass(CompletedQuest.self)
-        completedEntity.attributes = [
+        completedEntity.properties = [
             attribute("photoPath", .stringAttributeType),
             attribute("questText", .stringAttributeType),
             attribute("date", .dateAttributeType),
