@@ -36,6 +36,8 @@ final class CameraViewModel: ObservableObject {
 
     private let detector = ObjectDetectionService.shared
     private let keywords: [String]
+    /// Вторая группа ключевых слов (для «Дуэта»: нужно заснять оба предмета).
+    private let keywordsB: [String]?
     /// Фиксированная награда за снимок в режиме мини-игр (квесты — nil).
     private let pointsOverride: Int?
     private let onComplete: (UIImage) -> Void
@@ -43,11 +45,13 @@ final class CameraViewModel: ObservableObject {
 
     init(questText: String,
          keywords: [String],
+         keywordsB: [String]? = nil,
          pointsOverride: Int? = nil,
          onComplete: @escaping (UIImage) -> Void,
          onFinish: @escaping (Bool) -> Void) {
         self.questText = questText
         self.keywords = keywords
+        self.keywordsB = keywordsB
         self.pointsOverride = pointsOverride
         self.onComplete = onComplete
         self.onFinish = onFinish
@@ -118,7 +122,14 @@ final class CameraViewModel: ObservableObject {
             .map { "\($0.identifier) (\(Int($0.confidence * 100))%)" }
             .joined(separator: ", ")
 
-        if detector.isMatch(results: results, keywords: keywords) {
+        let ok: Bool
+        if let keywordsB {
+            ok = detector.isMatch(results: results, keywords: keywords)
+                && detector.isMatch(results: results, keywords: keywordsB)
+        } else {
+            ok = detector.isMatch(results: results, keywords: keywords)
+        }
+        if ok {
             await succeed(image, confidence: results.first?.confidence)
         } else {
             presentFailure()

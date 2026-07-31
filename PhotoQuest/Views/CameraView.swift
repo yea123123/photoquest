@@ -10,12 +10,14 @@ struct CameraView: View {
 
     init(questText: String,
          keywords: [String],
+         keywordsB: [String]? = nil,
          pointsOverride: Int? = nil,
          onComplete: @escaping (UIImage) -> Void,
          onFinish: @escaping (Bool) -> Void) {
         _viewModel = StateObject(wrappedValue: CameraViewModel(
             questText: questText,
             keywords: keywords,
+            keywordsB: keywordsB,
             pointsOverride: pointsOverride,
             onComplete: onComplete,
             onFinish: onFinish

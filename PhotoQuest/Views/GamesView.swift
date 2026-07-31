@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Хаб мини-игр: «Фото-Бинго» (прогулка) и «Фото-Спринт» (гонка на время).
+/// Хаб мини-игр: «Фото-Бинго» (прогулка), «Фото-Спринт» (гонка на время),
+/// «Фото-Рулетка» (барабан), «Фото-Дуэт» (два в одном), «Угадай-ка» (викторина).
 @MainActor
 struct GamesView: View {
 
@@ -30,6 +31,45 @@ struct GamesView: View {
                             title: "Фото-Спринт",
                             subtitle: "60 секунд",
                             description: "Сфоткай как можно больше случайных предметов за минуту. Серия удач — множитель ×2, ×3, ×4… Промах сбрасывает комбо."
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        RouletteView()
+                    } label: {
+                        gameCard(
+                            emoji: "🎡",
+                            color: .purple,
+                            title: "Фото-Рулетка",
+                            subtitle: "45 секунд на охоту",
+                            description: "Крути барабан — выпадет предмет, на поиск и съёмку которого даётся 45 секунд. Успех — +30 очков!"
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        DuetView()
+                    } label: {
+                        gameCard(
+                            emoji: "🧩",
+                            color: .pink,
+                            title: "Фото-Дуэт",
+                            subtitle: "Два в одном кадре",
+                            description: "Сфоткай ДВА предмета в одном кадре: кот + кружка, бабочка + цветок… Пара — +40, вся карточка — «Дуэт!» +200."
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    NavigationLink {
+                        GuessItView()
+                    } label: {
+                        gameCard(
+                            emoji: "🧠",
+                            color: .teal,
+                            title: "Угадай-ка",
+                            subtitle: "Викторина по фото",
+                            description: "Выбери фото из галереи и угадай, что на нём: 4 варианта, 10 раундов, +10 очков за верный ответ, идеал — бонус +30."
                         )
                     }
                     .buttonStyle(.plain)

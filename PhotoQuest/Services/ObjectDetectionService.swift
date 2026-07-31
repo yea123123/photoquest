@@ -91,6 +91,21 @@ final class ObjectDetectionService {
         return false
     }
 
+    /// Находит ключ словаря, которому модель дала максимальную уверенность
+    /// (для «Угадай-ки»: что лучше всего подходит к этому фото).
+    func bestKey(for results: [DetectionResult]) -> (key: String, confidence: Float)? {
+        var best: (key: String, confidence: Float)?
+        for (key, classes) in QuestKeywords.all {
+            let score = classes.reduce(Float(0)) { partial, className in
+                max(partial, results.first { Self.keywordsMatch($0.identifier, keyword: className) }?.confidence ?? 0)
+            }
+            if score > (best?.confidence ?? 0) {
+                best = (key, score)
+            }
+        }
+        return best
+    }
+
     /// Сравнивает идентификатор класса из модели со словом из словаря.
     /// Сравнение по словам в нижнем регистре:
     /// - «cat» совпадёт с классом «tiger cat» (общее слово);
