@@ -50,7 +50,7 @@ final class SilhouetteViewModel: ObservableObject {
 
     /// Эмодзи текущего раунда.
     var currentEmoji: String {
-        items.first { $0.name == correctName }?.emoji ?? "❓"
+        Self.items.first { $0.name == correctName }?.emoji ?? "❓"
     }
 
     /// Запуск новой игры.
