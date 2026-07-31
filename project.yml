@@ -1,0 +1,50 @@
+name: PhotoQuest
+options:
+  bundleIdPrefix: com.photoquest
+  createIntermediateGroups: true
+
+targets:
+  PhotoQuest:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: PhotoQuest
+        excludes:
+          - README.md
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.photoquest.app
+        PRODUCT_NAME: PhotoQuest
+        SWIFT_VERSION: "5.9"
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: false
+        INFOPLIST_FILE: PhotoQuest/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CURRENT_PROJECT_VERSION: "1"
+        MARKETING_VERSION: "1.0"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: true
+        SUPPORTS_MACCATALYST: false
+    dependencies:
+      - sdk: AVFoundation.framework
+      - sdk: CoreML.framework
+      - sdk: Vision.framework
+      - sdk: Photos.framework
+      - sdk: UIKit.framework
+      - sdk: SwiftUI.framework
+      - sdk: CoreData.framework
+
+schemes:
+  PhotoQuest:
+    build:
+      targets:
+        PhotoQuest: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    archive:
+      config: Release

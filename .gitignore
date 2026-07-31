@@ -1,0 +1,13 @@
+# macOS / Xcode
+.DS_Store
+*.xcuserstate
+xcuserdata/
+DerivedData/
+build/
+
+# Проект генерируется XcodeGen'ом (project.yml):
+PhotoQuest.xcodeproj/
+
+# Модель скачивается скриптом в CI (или кладётся вручную локально):
+PhotoQuest/Models/MobileNetV2.mlmodel
+PhotoQuest/Models/MobileNetV2.mlmodelc

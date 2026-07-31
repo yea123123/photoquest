@@ -1,0 +1,87 @@
+name: iOS Build
+
+# Сборка приложения «Фото-квест» на macOS-раннере:
+# 1) XcodeGen генерирует PhotoQuest.xcodeproj из project.yml
+# 2) xcodebuild собирает и архивирует приложение (без подписи)
+# 3) .xcarchive выкладывается как artifact
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build & Archive
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      # Модель MobileNetV2 не хранится в репозитории — скачиваем в CI.
+      # Если ни один источник не сработал — сборка продолжится без модели
+      # (приложение покажет экран «модель не найдена»).
+      - name: Download MobileNetV2 model (best effort)
+        run: |
+          mkdir -p PhotoQuest/Models
+          for url in \
+            "https://docs-assets.developer.apple.com/coreml/models/MobileNetV2.mlmodel" \
+            "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/master/MobileNetV2.mlmodel" \
+            "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/main/MobileNetV2.mlmodel"; do
+            echo "Trying $url"
+            if curl -sSL --fail -o PhotoQuest/Models/MobileNetV2.mlmodel "$url"; then
+              break
+            fi
+          done
+          if [ -s PhotoQuest/Models/MobileNetV2.mlmodel ]; then
+            size=$(stat -f%z PhotoQuest/Models/MobileNetV2.mlmodel)
+            if [ "$size" -lt 1000000 ] || ! unzip -t PhotoQuest/Models/MobileNetV2.mlmodel >/dev/null 2>&1; then
+              echo "::warning::Файл модели выглядит битым (${size} байт) — собираю без модели"
+              rm -f PhotoQuest/Models/MobileNetV2.mlmodel
+            else
+              echo "Модель загружена: ${size} байт"
+            fi
+          else
+            echo "::warning::MobileNetV2.mlmodel не загружен — сборка продолжается без модели детекции"
+          fi
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build (Release, generic iOS device)
+        run: |
+          xcodebuild \
+            -project PhotoQuest.xcodeproj \
+            -scheme PhotoQuest \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Archive
+        run: |
+          xcodebuild \
+            -project PhotoQuest.xcodeproj \
+            -scheme PhotoQuest \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/PhotoQuest.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            archive
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhotoQuest-xcarchive
+          path: build/PhotoQuest.xcarchive
+          if-no-files-found: error
