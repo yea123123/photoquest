@@ -45,20 +45,21 @@ final class CameraViewModel: ObservableObject {
     // MARK: - Жизненный цикл
 
     /// Запрашивает разрешение на камеру, проверяет модель и запускает сессию.
+    /// Камера запускается всегда — модель нужна только для автопроверки фото.
     func start() async {
         let authorized = await camera.requestAuthorization()
         guard authorized else {
             permissionDenied = true
             return
         }
-        guard detector.isModelAvailable else {
-            modelMissing = true
-            return
-        }
         camera.start { [weak self] ok in
             Task { @MainActor in
                 self?.cameraUnavailable = !ok
             }
+        }
+        if !detector.isModelAvailable {
+            modelMissing = true
+            showModelSheet = true
         }
     }
 
@@ -70,7 +71,7 @@ final class CameraViewModel: ObservableObject {
 
     /// Спуск затвора: делает фото и запускает проверку.
     func capture() {
-        guard phase != .checking, !permissionDenied, !modelMissing else { return }
+        guard phase != .checking, !permissionDenied else { return }
         camera.photoHandler = { [weak self] data in
             self?.handlePhoto(data)
         }
@@ -88,7 +89,10 @@ final class CameraViewModel: ObservableObject {
     /// Классификация выполняется в фоне, результат применяется на главном потоке.
     private func runDetection(_ image: UIImage) async {
         guard detector.isModelAvailable else {
+            // Модели нет: фото остаётся на экране, предлагаем сохранить вручную.
+            phase = .idle
             modelMissing = true
+            showModelSheet = true
             return
         }
         guard let result = await detector.classify(image) else {
@@ -103,6 +107,20 @@ final class CameraViewModel: ObservableObject {
         } else {
             presentFailure()
         }
+    }
+
+    /// Сохранить фото без проверки нейросетью (модель отсутствует).
+    func saveWithoutCheck() {
+        guard let image = capturedPhoto else { return }
+        showModelSheet = false
+        Task { await succeed(image) }
+    }
+
+    /// Закрыть предупреждение о модели и вернуться к видоискателю.
+    func dismissModelSheet() {
+        showModelSheet = false
+        capturedPhoto = nil
+        phase = .idle
     }
 
     private func presentFailure() {

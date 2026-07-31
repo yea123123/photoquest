@@ -64,6 +64,23 @@ struct CameraView: View {
             if viewModel.permissionDenied {
                 permissionDeniedOverlay
             }
+            if viewModel.cameraUnavailable {
+                VStack(spacing: 14) {
+                    Image(systemName: "video.slash")
+                        .font(.system(size: 48))
+                        .foregroundStyle(.white)
+                    Text("Камера недоступна")
+                        .font(.title3.bold())
+                        .foregroundStyle(.white)
+                    Text("Возможно, камера занята другим приложением. Закройте его и попробуйте снова.")
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.85))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black.opacity(0.85))
+            }
         }
         .statusBarHidden()
         .task { await viewModel.start() }
@@ -204,21 +221,25 @@ struct CameraView: View {
             Image(systemName: "cpu")
                 .font(.system(size: 52))
                 .foregroundStyle(.orange)
-            Text("Не найдена модель MobileNetV2")
+            Text("Модель MobileNetV2 не найдена")
                 .font(.title3.bold())
-            Text("Скачайте модель MobileNetV2.mlmodel и добавьте её в проект (галочка Target Membership). Без неё приложение не сможет проверять фото.")
+            Text("Проверка фото нейросетью недоступна, но вы можете снимать и сохранять фото без проверки.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Link(destination: Constants.modelDownloadURL) {
-                Text("Открыть страницу модели")
-                    .font(.headline)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 12)
-                    .background(Capsule().fill(Color.accentColor))
+            if viewModel.capturedPhoto != nil {
+                Button {
+                    viewModel.saveWithoutCheck()
+                } label: {
+                    Text("Сохранить фото без проверки")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 22)
+                        .padding(.vertical, 12)
+                        .background(Capsule().fill(Color.accentColor))
+                }
             }
-            Button("Понятно") { viewModel.showModelSheet = false }
+            Button("Понятно") { viewModel.dismissModelSheet() }
                 .font(.subheadline)
         }
         .padding(28)

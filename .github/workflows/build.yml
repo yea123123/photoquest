@@ -36,6 +36,8 @@ jobs:
           OUT="PhotoQuest/Models/MobileNetV2.mlmodel"
           rm -f "$OUT"
           for url in \
+            "https://ml-assets.apple.com/coreml/models/Image/ImageClassification/MobileNetV2/MobileNetV2.mlmodel" \
+            "https://raw.githubusercontent.com/tucan9389/ImageClassification-CoreML/master/ImageClassification-CoreML/mlmodel/MobileNet/MobileNetV2.mlmodel" \
             "https://docs-assets.developer.apple.com/coreml/models/MobileNetV2.mlmodel" \
             "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/master/MobileNetV2.mlmodel" \
             "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/main/MobileNetV2.mlmodel"; do
