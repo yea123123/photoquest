@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// Достижение: бейдж с названием и описанием.
