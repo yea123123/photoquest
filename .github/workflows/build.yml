@@ -79,7 +79,30 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             archive
 
-      - name: Upload artifact
+      # Упаковываем unsigned .app из архива в IPA (zip с папкой Payload).
+      # Sideloadly/AltStore на Windows сами подпишут его вашим Apple ID.
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH="build/PhotoQuest.xcarchive/Products/Applications/PhotoQuest.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "::error::App bundle not found at $APP_PATH"
+            exit 1
+          fi
+          mkdir -p dist/Payload
+          cp -R "$APP_PATH" dist/Payload/
+          cd dist
+          zip -qry ../PhotoQuest-unsigned.ipa Payload
+          cd ..
+          echo "IPA ready: $(stat -f%z PhotoQuest-unsigned.ipa) bytes"
+
+      - name: Upload IPA (unsigned, for sideloading)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PhotoQuest-unsigned-ipa
+          path: PhotoQuest-unsigned.ipa
+          if-no-files-found: error
+
+      - name: Upload xcarchive
         uses: actions/upload-artifact@v4
         with:
           name: PhotoQuest-xcarchive

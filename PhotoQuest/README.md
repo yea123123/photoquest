@@ -60,6 +60,33 @@ xcodegen generate       # создаёт PhotoQuest.xcodeproj
 open PhotoQuest.xcodeproj
 ```
 
+## Установка на iPhone с Windows (Sideloadly)
+
+Билд собирается в GitHub Actions и выходит как артефакт
+**`PhotoQuest-unsigned.ipa`** — неподписанное приложение,
+которое Sideloadly подпишет вашим Apple ID прямо на Windows.
+
+1. **Запустите сборку**: запушьте код на GitHub → Actions → iOS Build → дождитесь зелёной галочки.
+2. **Скачайте артефакт**: Actions → последний запуск → Artifacts → `PhotoQuest-unsigned-ipa`.
+3. **Подготовьте Windows**:
+   - Установите [iTunes](https://www.apple.com/itunes/) (или приложение Apple Devices)
+     — нужны USB-драйверы Apple Mobile Device;
+   - Скачайте [Sideloadly](https://sideloadly.io/).
+4. **На iPhone**: Настройки → Конфиденциальность и безопасность → **Режим разработчика** → включите (требуется iOS 16+, после включения iPhone перезагрузится).
+5. **Установка**: подключите iPhone по USB → откройте Sideloadly → перетащите
+   `.ipa` в окно → введите Apple ID (бесплатный) и пароль (или app-specific password)
+   → Install. Приложение появится на телефоне.
+6. **Продление**: сертификат бесплатного Apple ID живёт **7 дней** — через неделю
+   переустановите приложение той же командой в Sideloadly (не забудьте включить
+   в Sideloadly авто-переподпись при подключённом iPhone, чтобы не пропустить).
+
+Ограничения бесплатного аккаунта: подпись на 7 дней, до 3 приложений одновременно.
+Если bundle ID `com.photoquest.app` занят на вашем аккаунте — поменяйте его
+в `project.yml` (`PRODUCT_BUNDLE_IDENTIFIER`).
+
+Второй артефакт `PhotoQuest-xcarchive` нужен на случай, если появится Mac:
+Xcode → Open Developer Tool → Archives → открыть → Sign & Distribute.
+
 ## Сборка в Xcode (пошагово)
 
 1. **Создайте проект**: Xcode → File → New → Project → iOS → App.
