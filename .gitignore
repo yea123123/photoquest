@@ -8,6 +8,5 @@ build/
 # Проект генерируется XcodeGen'ом (project.yml):
 PhotoQuest.xcodeproj/
 
-# Модель скачивается скриптом в CI (или кладётся вручную локально):
-PhotoQuest/Models/MobileNetV2.mlmodel
+# Скомпилированная модель (генерируется Xcode из .mlmodel):
 PhotoQuest/Models/MobileNetV2.mlmodelc

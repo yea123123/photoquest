@@ -221,6 +221,7 @@ struct HomeView: View {
     // MARK: - Обработка закрытия камеры
 
     private func cameraDidFinish(success: Bool) {
+        showCamera = false
         guard success else { return }
         viewModel.refresh()
         Haptics.success()

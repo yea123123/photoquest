@@ -27,20 +27,19 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      # Модель MobileNetV2 не хранится в репозитории — скачиваем в CI.
-      # Если ни один источник не сработал — сборка продолжится без модели
-      # (приложение покажет экран «модель не найдена»).
-      - name: Download MobileNetV2 model (best effort)
+      # Модель MobileNetV2 лежит в репозитории (PhotoQuest/Models).
+      # Если её вдруг нет (например, форк) — скачиваем из открытых источников.
+      - name: Download MobileNetV2 model (fallback if not in repo)
         run: |
           mkdir -p PhotoQuest/Models
           OUT="PhotoQuest/Models/MobileNetV2.mlmodel"
-          rm -f "$OUT"
+          if [ -s "$OUT" ]; then
+            echo "Модель уже в репозитории: $(stat -f%z "$OUT") байт"
+            exit 0
+          fi
           for url in \
             "https://ml-assets.apple.com/coreml/models/Image/ImageClassification/MobileNetV2/MobileNetV2.mlmodel" \
-            "https://raw.githubusercontent.com/tucan9389/ImageClassification-CoreML/master/ImageClassification-CoreML/mlmodel/MobileNet/MobileNetV2.mlmodel" \
-            "https://docs-assets.developer.apple.com/coreml/models/MobileNetV2.mlmodel" \
-            "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/master/MobileNetV2.mlmodel" \
-            "https://raw.githubusercontent.com/hollance/MobileNet-CoreML/main/MobileNetV2.mlmodel"; do
+            "https://raw.githubusercontent.com/tucan9389/ImageClassification-CoreML/master/ImageClassification-CoreML/mlmodel/MobileNet/MobileNetV2.mlmodel"; do
             echo "Trying $url"
             if curl -sSL --fail -o "$OUT" "$url"; then
               echo "Downloaded from $url"
@@ -64,14 +63,15 @@ jobs:
           fi
           if [ -s "$OUT" ]; then
             size=$(stat -f%z "$OUT")
-            if [ "$size" -lt 1000000 ] || ! unzip -t "$OUT" >/dev/null 2>&1; then
-              echo "::warning::Файл модели выглядит битым (${size} байт) — собираю без модели"
+            # Модель — zip (PK\x03\x04) или protobuf (08 01 12 ...): обе формы допустимы.
+            if [ "$size" -lt 1000000 ]; then
+              echo "::warning::Файл модели подозрительно мал (${size} байт) — собираю без модели"
               rm -f "$OUT"
             else
               echo "Модель загружена: ${size} байт"
             fi
           else
-            echo "::warning::MobileNetV2.mlmodel не загружен — сборка продолжается без модели детекции"
+            echo "::warning::MobileNetV2.mlmodel не загружен — сборка продолжится без автопроверки фото"
           fi
 
       - name: Generate Xcode project
