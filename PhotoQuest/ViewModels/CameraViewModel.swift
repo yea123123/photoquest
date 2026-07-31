@@ -36,15 +36,19 @@ final class CameraViewModel: ObservableObject {
 
     private let detector = ObjectDetectionService.shared
     private let keywords: [String]
+    /// Фиксированная награда за снимок в режиме мини-игр (квесты — nil).
+    private let pointsOverride: Int?
     private let onComplete: (UIImage) -> Void
     private let onFinish: (Bool) -> Void
 
     init(questText: String,
          keywords: [String],
+         pointsOverride: Int? = nil,
          onComplete: @escaping (UIImage) -> Void,
          onFinish: @escaping (Bool) -> Void) {
         self.questText = questText
         self.keywords = keywords
+        self.pointsOverride = pointsOverride
         self.onComplete = onComplete
         self.onFinish = onFinish
         flashOn = GameSettings.shared.flashMode == .on
@@ -142,12 +146,18 @@ final class CameraViewModel: ObservableObject {
     }
 
     /// Успех: начисляем очки, сохраняем фото, показываем зелёную галочку и закрываем камеру.
+    /// В режиме мини-игр (pointsOverride) награда фиксированная и не трогает квесты.
     private func succeed(_ image: UIImage, confidence: Float?) async {
         let seconds = max(1, Int(Date().timeIntervalSince(openedAt)))
-        lastPointsEarned = GameStats.shared.recordCompleted(questText: questText,
-                                                            confidence: confidence,
-                                                            seconds: seconds)
-        lastDayBonus = GameStats.shared.lastDayBonus
+        if let pointsOverride {
+            lastPointsEarned = pointsOverride
+            lastDayBonus = 0
+        } else {
+            lastPointsEarned = GameStats.shared.recordCompleted(questText: questText,
+                                                                confidence: confidence,
+                                                                seconds: seconds)
+            lastDayBonus = GameStats.shared.lastDayBonus
+        }
         onComplete(image)
         Haptics.winSound()
         Haptics.success()

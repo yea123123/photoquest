@@ -100,6 +100,15 @@ final class GameStats: ObservableObject {
         }
     }
 
+    /// Начисляет очки вне квестов (мини-игры). Серию, рекорды и бонус дня не трогает.
+    func addPoints(_ points: Int) {
+        guard points != 0 else { return }
+        totalPoints += points
+        defaults.set(totalPoints, forKey: Self.keyPoints)
+        lastPointsEarned = points
+        lastDayBonus = 0
+    }
+
     /// Уровень игрока по накопленным очкам.
     static func level(points: Int) -> PlayerLevel {
         switch points {
